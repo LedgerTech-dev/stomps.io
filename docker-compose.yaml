@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  redis:
+    image: redis
+    restart: always
+    networks:
+      - app-network
+    volumes:
+      - redis:/data/stompsdb
+
+  mongo:
+    image: mongo
+    restart: always
+    networks:
+      - app-network
+    volumes:
+      - mongo-data:/data/stompsdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  app:
+    image: docker.io/ikemhood/stomps-fullstack
+    restart: always
+    ports:
+      - '3000:3000'
+    expose:
+      - '3000' 
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  redis: 
